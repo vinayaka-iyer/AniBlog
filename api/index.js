@@ -17,6 +17,8 @@ const secret = "asdf43q5421gretgadfag34t";
 app.use(cors({ credentials: true, origin: "http://127.0.0.1:5173" }));
 app.use(express.json());
 app.use(cookieParser());
+//to statically serve images in our uploads folder
+app.use("/uploads", express.static(__dirname + "/uploads"));
 
 mongoose.connect(
 	"mongodb+srv://vinayakaiyer999:vinayaka999@cluster0.rtiethf.mongodb.net/"
@@ -79,14 +81,29 @@ app.post("/post", uploadMiddleware.single("file"), async (req, res) => {
 	const ext = parts[parts.length - 1];
 	const newPath = path + "." + ext;
 	fs.renameSync(path, newPath);
-	const { title, summary, content } = req.body;
-	const PostDoc = await Post.create({
-		title,
-		summary,
-		content,
-		cover: newPath,
+
+	const { token } = req.cookies;
+	jwt.verify(token, secret, {}, async (err, info) => {
+		if (err) throw err;
+		const { title, summary, content } = req.body;
+		const PostDoc = await Post.create({
+			title,
+			summary,
+			content,
+			cover: newPath,
+			author: info.id,
+		});
+		res.json(PostDoc);
 	});
-	res.json(PostDoc);
+});
+
+app.get("/post", async (req, res) => {
+	res.json(
+		await Post.find()
+			.populate("author", ["username"])
+			.sort({ createdAt: -1 })
+			.limit(20)
+	);
 });
 
 app.listen(4000);
