@@ -36,7 +36,6 @@ export default function EditPost() {
 			credentials: "include",
 		});
 		if (response.ok) {
-			console.log(response);
 			setRedirect(true);
 		}
 	}
